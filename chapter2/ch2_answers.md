@@ -71,5 +71,5 @@ e. What is the number of threads that execute the code on line 04?
 
 10. A new summer intern was frustrated with CUDA. He has been complaining that CUDA is very tedious. He had to declare many functions that he plans to execute on both the host and the device twice, once as a host function and once as a device function. What is your response?
 
-  **There is not need to declare multiple functions. He could use both _ _ host _ _ and _ _ device _ _ in a function declaration. That way, the compiler generates two versions of the function, on for the device and one for the host.**
+  **There is no need to declare multiple functions. He could use both _ _ host _ _ and _ _ device _ _ in a function declaration. That way, the compiler generates two versions of the function, on for the device and one for the host.**
 
