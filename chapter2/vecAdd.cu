@@ -20,9 +20,9 @@ __global__ void vecAddKernel(float *A_d, float *B_d, float *C_d, unsigned int n)
 }
 
 void vecAdd(float *A_h, float *B_h, float *C_h, unsigned int n) {
+    // Allocate GPU memory
     float *A_d, *B_d, *C_d;
     
-    // Allocate GPU memory
     checkCuda( cudaMalloc((void**)&A_d, n * sizeof(float)) );
     checkCuda( cudaMalloc((void**)&B_d, n * sizeof(float)) );
     checkCuda( cudaMalloc((void**)&C_d, n * sizeof(float)) );
@@ -36,7 +36,6 @@ void vecAdd(float *A_h, float *B_h, float *C_h, unsigned int n) {
     int numBlocks = (n + numThreadsPerBlock  - 1) / numThreadsPerBlock;
     vecAddKernel<<<numBlocks, numThreadsPerBlock>>>(A_d, B_d, C_d, n);
     checkCuda( cudaGetLastError() );
-
     checkCuda( cudaDeviceSynchronize() );
 
     // Transfer data device -> host
@@ -68,8 +67,6 @@ int main(void) {
     vecAdd(A, B, C, N);
 
     // Verify result
-    printf("A[0] = %f\n", A[0]);
-    printf("B[0] = %f\n", B[0]);
     printf("C[0] = %f | Expected: %f\n", C[0], A[0] + B[0]);
 
     free(A);
