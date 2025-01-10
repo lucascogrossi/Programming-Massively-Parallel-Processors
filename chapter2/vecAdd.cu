@@ -60,8 +60,8 @@ int main(void) {
     }
 
     for (int i = 0; i < N; ++i) {
-        A[i] = rand();
-        B[i] = rand();
+        A[i] = rand() / (float)RAND_MAX;
+        B[i] = rand() / (float)RAND_MAX;
     }
 
     vecAdd(A, B, C, N);
