@@ -78,11 +78,10 @@ int main(void) {
 
     printf("P[0] = %f | Expected:", P[0]);
     float sum = 0;
-    for (int k = 0; k < width; k++) {
-        sum += M[k] * N[k * width];
+    for (int k = 0; k < n; k++) {
+        sum += M[k] * N[k * n];
     }
-    P_verify[0] = sum;
-    printf("%f\n", P_verify[0]);
+    printf("%f\n", sum);
 
 
     free(M);
