@@ -28,7 +28,8 @@ dim3 dimGrid(1, (n + dimBlock.y - 1) / dimBlock.y);
 b. Write a kernel that has each thread produce one output matrix column. Fillin the execution configuration parameters for the design.
 
 ```
-__global__ void mmult(float *M, float *N, float *P, int n) {
+__global__
+void mmult(float *M, float *N, float *P, int n) {
     int col = blockDim.x * blockIdx.x + threadIdx.x;
 
     if (col < n) {
@@ -47,4 +48,44 @@ dim3 dimBlock(256, 1);
 dim3 dimGrid((n + dimBlock.x - 1) / dimBlock.x);
 */
 ```
+c. Analyze the pros and cons of each of the two kernels designs.
+
+Both kernels have a straightforward thread indexing - there's no need to think about higher dimensions. However, both kernels are very inneficient since they are reading multiple times from the same data (row/column) and both are not taking advantage of the GPU's full computational capacity.
+
+3. Consider the following CUDA kernel and the corresponding host function that calls it:
+
+```
+__global__ void foo_kernel(float *a, float *b, unsigned int M, unsigned int N) {
+    unsigned int row = blockDim.y * blockIdx.y + threadIdx.y;
+    unsigned int col = blockIdx.x * blockIdx.y + threadIdx.x;
+    if (row < M && col < N) {
+        b[row * N + col] = a[row * N + col]/2.1f + 4.8f; // Line 05
+    }
+}
+
+void foo(float *a_d, float *b_d) {
+    unsigned int M = 150;
+    unsigned int N = 300;
+    dim3 bd(16, 32);
+    dim3 gd((N - 1)/16 + 1, (M - 1)/32 + 1);
+    fooKernel<<< gd, bd >>>(a_d, b_d, M, N);
+}
+```
+a. What is the number of threads per block?
+
+16 threads in the x dimension and 32 threads in the y dimension (512 threads).
+
+b. What is the number of threads in the grid?
+
+61440 threads.
+
+c. What is the number of blocks in the grid?
+
+20 blocks in the x dimension and 6 blocks in the y dimension (120 total blocks)
+
+d. What is the number of threads that execute the code on line 05?
+
+
+
+
 
