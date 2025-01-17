@@ -14,7 +14,7 @@ inline cudaError_t checkCuda(cudaError_t result) {
     return result;
 }
 
-__global__ void matrixMultKernel(float *M, float *N, float *P, int width) {
+__global__ void tiledMatrixMultKernel(float *M, float *N, float *P, int width) {
     int row = blockDim.y * blockIdx.y + threadIdx.y;
     int col = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -39,7 +39,7 @@ __global__ void matrixMultKernel(float *M, float *N, float *P, int width) {
     P[row * width + col] = sum;
 }
 
-void matrixMult(float *M_h, float *N_h, float *P_h, int width) {
+void tiledMatrixMult(float *M_h, float *N_h, float *P_h, int width) {
     // Allocate GPU memory
     float *M_d, *N_d, *P_d;
     checkCuda( cudaMalloc((void**)&M_d, width * width * sizeof(float)) );
@@ -55,7 +55,7 @@ void matrixMult(float *M_h, float *N_h, float *P_h, int width) {
     dim3 numBlocks((width + numThreadsPerBlock.x - 1) / numThreadsPerBlock.x,
                    (width + numThreadsPerBlock.y - 1) / numThreadsPerBlock.y
     );
-    matrixMultKernel<<< numBlocks, numThreadsPerBlock >>>(M_d, N_d, P_d, width);
+    tiledMatrixMultKernel<<< numBlocks, numThreadsPerBlock >>>(M_d, N_d, P_d, width);
     checkCuda( cudaGetLastError() );
     checkCuda( cudaDeviceSynchronize() );
 
@@ -88,7 +88,7 @@ int main(void) {
         N[i] = rand() / (float)RAND_MAX;
     }
 
-    matrixMult(M, N, P, n);
+    tiledMatrixMult(M, N, P, n);
 
     printf("P[0] = %f | Expected:", P[0]);
     float sum = 0;
