@@ -2,9 +2,6 @@
 
 Shared memory won't benefit matrix addition because there is no reuse of data. Assuming one thread is assigned to one output element, each element of the output matrix is simply calculated by adding the two corresponding elements from the input matrices.
 
-2. 
-TODO
-
 3. What type of incorrect execution behavior can happen if one forgot to use one or both __syncthreads() in the kernel of fig 5.9?
 
 The first __syncthreads() ensures that all threads have finished loading the tiles of M and N into M_s and N_s before any of them can move forward. If one forgot to add this barrier, some thread could try accessing an element that was not loaded yet. The second __syncthreads() ensures that all threads have finished using the M and N elements in shared memory before moving on to load the next tile. If the programmer forgot this barrier, a thread could load next tile's elements too early and corrupt the input value of other threads.
@@ -54,4 +51,10 @@ b. Peak FLOPS=300 GFLOPS, peak memory bandwidth=250GB/second.
  Compyte-to-memory ratio of the device: 300GFLOPS/250GB/s = 1.2 FLOPS/byte.
 
 The kernel ratio is greater than the device's ratio, compute-bound. This means the device cannot provide enough compute power relative to memory bandwidth. Thefore, compute-bound.
+
+10. TODO (waiting for new edition for fixes)
+
+11. TODO
+
+12. TODO
 
