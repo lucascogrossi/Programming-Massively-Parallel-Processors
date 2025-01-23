@@ -15,12 +15,11 @@ inline cudaError_t checkCuda(cudaError_t result) {
 }
 
 __global__ void tiledMatrixMultKernel(float *M, float *N, float *P, int width) {
-
     __shared__ float M_s[TILE_WIDTH][TILE_WIDTH];
     __shared__ float N_s[TILE_WIDTH][TILE_WIDTH];
 
-    int bx = blockIx.x;   int by = blockIdx.y;
-    int tx = threadIdx.x; int ty = threadIdx.y;
+    int bx = blockIdx.x;   int by = blockIdx.y;
+    int tx = threadIdx.x;  int ty = threadIdx.y;
 
     // Identify the row and column of the P element to work on
     int row = by * TILE_WIDTH + ty;
@@ -28,19 +27,33 @@ __global__ void tiledMatrixMultKernel(float *M, float *N, float *P, int width) {
 
     // Loop over the M and N tiles required to compute P element
     float Pvalue = 0;
-    for (int tile = 0; tile < width/TILE_WIDTH; tile++) {
+    for (int tile = 0; tile < (width + TILE_WIDTH - 1) / TILE_WIDTH; tile++) {
 
         // Collaborative loading of M and N tiles into shared memory
-        M_s[ty][tx] = M[row * width * (tile*TILE_WIDTH + tx)];
-        N_s[ty][tx] = N[(tile*TILE_WIDTH + ty) * width + col];
+        if (row < width && (tile * TILE_WIDTH + tx) < width) {
+            M_s[ty][tx] = M[row * width + (tile * TILE_WIDTH + tx)];
+        } else {
+            M_s[ty][tx] = 0.0f;  // Zero-padding for out-of-bounds accesses
+        }
+
+        if ((tile * TILE_WIDTH + ty) < width && col < width) {
+            N_s[ty][tx] = N[(tile * TILE_WIDTH + ty) * width + col];
+        } else {
+            N_s[ty][tx] = 0.0f;  // Zero-padding for out-of-bounds accesses
+        }
         __syncthreads();
 
+        // Compute the partial product for the tile
         for (int k = 0; k < TILE_WIDTH; k++) {
             Pvalue += M_s[ty][k] * N_s[k][tx];
         }
         __syncthreads();
     }
-    P[row * width + col] = Pvalue;
+
+    // Write the result to the output matrix P
+    if (row < width && col < width) {
+        P[row * width + col] = Pvalue;
+    }
 }
 
 void tiledMatrixMult(float *M_h, float *N_h, float *P_h, int width) {
