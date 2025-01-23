@@ -4,7 +4,7 @@
 #include <time.h>
 #include <cuda_runtime.h>
 
-#define TILE_DIM 32
+#define TILE_WIDTH 32
 
 inline cudaError_t checkCuda(cudaError_t result) {
     if (result != cudaSuccess) {
@@ -15,28 +15,32 @@ inline cudaError_t checkCuda(cudaError_t result) {
 }
 
 __global__ void tiledMatrixMultKernel(float *M, float *N, float *P, int width) {
-    int row = blockDim.y * blockIdx.y + threadIdx.y;
-    int col = blockDim.x * blockIdx.x + threadIdx.x;
 
-    __shared__ float M_s[TILE_DIM][TILE_DIM];
-    __shared__ float N_s[TILE_DIM][TILE_DIM];
+    __shared__ float M_s[TILE_WIDTH][TILE_WIDTH];
+    __shared__ float N_s[TILE_WIDTH][TILE_WIDTH];
 
-    float sum = 0.0f;
-    
-    for (int tile = 0; tile < width/TILE_DIM; tile++) {
+    int bx = blockIx.x;   int by = blockIdx.y;
+    int tx = threadIdx.x; int ty = threadIdx.y;
 
-        // Load tile to shared memory
-        M_s[threadIdx.y][threadIdx.x] = M[row*width + tile*TILE_DIM + threadIdx.x];
-        N_s[threadIdx.y][threadIdx.x] = N[(tile*TILE_DIM + threadIdx.y) * width + col];
+    // Identify the row and column of the P element to work on
+    int row = by * TILE_WIDTH + ty;
+    int col = bx * TILE_WIDTH + tx;
+
+    // Loop over the M and N tiles required to compute P element
+    float Pvalue = 0;
+    for (int tile = 0; tile < width/TILE_WIDTH; tile++) {
+
+        // Collaborative loading of M and N tiles into shared memory
+        M_s[ty][tx] = M[row * width * (tile*TILE_WIDTH + tx)];
+        N_s[ty][tx] = N[(tile*TILE_WIDTH + ty) * width + col];
         __syncthreads();
 
-        // Compute with tile
-        for (int i = 0; i < TILE_DIM; i++) {
-            sum += M_s[threadIdx.y][i] * N_s[i][threadIdx.x];
+        for (int k = 0; k < TILE_WIDTH; k++) {
+            Pvalue += M_s[ty][k] * N_s[k][tx];
         }
         __syncthreads();
     }
-    P[row * width + col] = sum;
+    P[row * width + col] = Pvalue;
 }
 
 void tiledMatrixMult(float *M_h, float *N_h, float *P_h, int width) {
