@@ -3,8 +3,6 @@
 
 ### Part I - Fundamental Concepts
 
-Here's the table with Chapter 1 added:
-
 | CHAPTER                                         | Code/Notes | Answers |
 |-------------------------------------------------|------------|---------|
 | Chapter 1    Introduction                                    | N/A        | N/A     |
