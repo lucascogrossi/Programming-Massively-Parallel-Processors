@@ -4,7 +4,7 @@
 #include <time.h>
 #include <cuda_runtime.h>
 
-#define TILE_DIM 32
+#define TILE_WIDTH 32
 #define COARSE_FACTOR 4
 
 inline cudaError_t checkCuda(cudaError_t result) {
@@ -15,37 +15,46 @@ inline cudaError_t checkCuda(cudaError_t result) {
     return result;
 }
 
-__global__ void tiledMatrixMultKernel(float *M, float *N, float *P, int width) {
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int colStart = blockIdx.x * blockDim.x * COARSE_FACTOR + threadIdx.x;
+__global__ void coarsedTiledMatrixMultKernel(float *M, float *N, float *P, int width) {
+    __shared__ float M_s[TILE_WIDTH][TILE_WIDTH];
+    __shared__ float N_s[TILE_WIDTH][TILE_WIDTH];
 
-    __shared__ float M_s[TILE_DIM][TILE_DIM];
-    __shared__ float N_s[TILE_DIM][TILE_DIM];
+    int bx = blockIdx.x;   int by = blockIdx.y;
+    int tx = threadIdx.x;  int ty = threadIdx.y;
 
-    float sum[COARSE_FACTOR];
+    // Identify the row and column of the P element to work on
+    int row = by * TILE_WIDTH + ty;
+    int colStart = bx * TILE_WIDTH * COARSE_FACTOR + tx;
+
+    // Initialize Pvalue for all output elements
+    float Pvalue[COARSE_FACTOR];
     for (int c = 0; c < COARSE_FACTOR; c++) {
-        sum[c] = 0.0f;
+        Pvalue[c] = 0.0f;
     }
 
-    for (int tile = 0; tile < width/TILE_DIM; tile++) {
-        M_s[threadIdx.y][threadIdx.x] = M[row * width + tile*TILE_DIM + threadIdx.x];
+    // Loop over the M and N tiles required to compute P element
+    for (int tile = 0; tile < width/TILE_WIDTH; tile++) {
+
+        // Collaborative loading of M tile into shared memory
+        M_s[ty][tx] = M[row * width + tile*TILE_WIDTH + tx];
 
         for (int c = 0; c < COARSE_FACTOR; c++) {
-            int col = colStart + c*TILE_DIM;
+            int col = colStart + c * TILE_WIDTH;
 
-            N_s[threadIdx.y][threadIdx.x] = N[(tile*TILE_DIM + threadIdx.y) * width + col];
+            // Collaborative loading of N tile into shared memory
+            N_s[ty][tx] = N[(tile*TILE_WIDTH + ty) * width + col];
             __syncthreads();
 
-            for (int i = 0; i < TILE_DIM; i++) {
-                sum[c] += M_s[threadIdx.y][i] * N_s[i][threadIdx.x];
+            for (int k = 0; k < TILE_WIDTH; k++) {
+                Pvalue[c] += M_s[ty][k] * N_s[k][tx];
             }
             __syncthreads();
         }
     }
 
     for (int c = 0; c < COARSE_FACTOR; c++) {
-        int col = colStart + c*TILE_DIM;
-        P[row * width + col] = sum[c];
+        int col = colStart + c * TILE_WIDTH;
+        P[row * width + col] = Pvalue[c];
     }
 
 }
@@ -63,9 +72,10 @@ void tiledMatrixMult(float *M_h, float *N_h, float *P_h, int width) {
 
     // Perform mmult
     dim3 numThreadsPerBlock(32, 32);
-    dim3 numBlocks((width + numThreadsPerBlock.x - 1)/COARSE_FACTOR / (numThreadsPerBlock.x ),
-                   (width + numThreadsPerBlock.y - 1) / numThreadsPerBlock.y);
-    tiledMatrixMultKernel<<< numBlocks, numThreadsPerBlock >>>(M_d, N_d, P_d, width);
+    dim3 numBlocks((width + numThreadsPerBlock.x * COARSE_FACTOR - 1) / (numThreadsPerBlock.x * COARSE_FACTOR),
+                   (width + numThreadsPerBlock.y - 1) / numThreadsPerBlock.y
+    );
+    coarsedTiledMatrixMultKernel<<< numBlocks, numThreadsPerBlock >>>(M_d, N_d, P_d, width);
     checkCuda( cudaGetLastError() );
     checkCuda( cudaDeviceSynchronize() );
 
@@ -82,7 +92,7 @@ int main(void) {
     srand(time(NULL));
 
     // N x N matrix
-    int n = 1 << 12;
+    int n = 1 << 10;
 
     float *M = (float*) malloc(n * n * sizeof(float));
     float *N = (float*) malloc(n * n * sizeof(float));
