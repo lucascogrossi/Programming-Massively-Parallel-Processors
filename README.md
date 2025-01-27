@@ -10,7 +10,7 @@
 | Chapter 3 Multidimensional grids and data       | [blur.cu](ch3_Multidimensional_grids_and_data/blur.cu) <br> [colorToGrayscale.cu](ch3_Multidimensional_grids_and_data/colorToGrayscale.cu) <br> [matrixMult.cu](ch3_Multidimensional_grids_and_data/matrixMult.cu)       |       [ch3_answers.md](ch3_Multidimensional_grids_and_data/ch3_answers.md)  |
 | Chapter 4 Compute architecture and scheduling   |      N/A      |  [ch4_answers.md](ch4_Compute_architecture_and_scheduling/ch4_answers.md)      |
 | Chapter 5 Memory architecture and data locality |       [tiledMatrixMult.cu](ch5_Memory_architecture_and_data_locality/tiledMatrixMult.cu)     |     [ch5_answers.md](ch5_Memory_architecture_and_data_locality/ch5_answers.md)    |
-| Chapter 6 Performance considerations            |   [coarsedTileMatrixMultKernel.cu](ch6_Performance_considerations/coarsedTileMatrixMultKernel.cu) <br>   [thread_coarsening_example.ipynb](ch6_Performance_considerations/thread_coarsening__example.ipynb)     |   [ch6_answers.md](ch6_Performance_considerations/ch6_answers.md)      |
+| Chapter 6 Performance considerations            |   [coarsedTileMatrixMultKernel.cu](ch6_Performance_considerations/coarsedTileMatrixMultKernel.cu) <br>   [thread_coarsening_example.ipynb](ch6_Performance_considerations/thread_coarsening__example.ipynb) [cornerTurning.cu](ch6_Performance_considerations/cornerTurning.cu)     |   [ch6_answers.md](ch6_Performance_considerations/ch6_answers.md)      |
 
 ### Part II - Parallel Patterns
 
