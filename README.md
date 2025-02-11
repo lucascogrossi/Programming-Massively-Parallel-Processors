@@ -16,7 +16,7 @@
 
 | CHAPTER                      | Code/Notes | Answers |
 |------------------------------|------------|---------|
-| Chapter 7 Convolution        | TODO       | TODO    |
+| Chapter 7 Convolution        | [convolutionKernel.cu](ch7_Convolution/convolutionKernel.cu)       | [ch7_answers.md](ch7_Convolution/ch7_answers.md)    |
 | Chapter 8 Stencil            | TODO       | TODO    |
 | Chapter 9 Parallel histogram | TODO       | TODO    |
 | Chapter 10 Reduction         | TODO       | TODO    |
